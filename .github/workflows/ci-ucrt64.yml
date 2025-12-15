@@ -3,13 +3,13 @@ name: UCRT64 Qt5 Build
 on:
   push:
     paths-ignore:
-    - '**/*.md'
+      - '**/*.md'
   pull_request:
     paths-ignore:
-    - '**/*.md'
+      - '**/*.md'
 
-concurrency:  
-  group: ${{ github.workflow}}-${{ github.head_ref }}  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
 permissions:
@@ -20,6 +20,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       actions: write
+
     defaults:
       run:
         shell: msys2 {0}
@@ -31,7 +32,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup MSYS2
-        uses: msys2/setup-msys2@40677d36a502eb2cf0fb808cc9dec31bf6152638 # v2.28.0
+        uses: msys2/setup-msys2@40677d36a502eb2cf0fb808cc9dec31bf6152638
         with:
           msystem: UCRT64
           update: true
@@ -60,11 +61,28 @@ jobs:
 
       - name: Checkout submodules
         run: |
-          env
+          set -eux
           git submodule update --init --remote libbitdht/ libretroshare/ retroshare-webui/
           git submodule update --init supportlibs/librnp supportlibs/rapidjson supportlibs/restbed
 
       - name: CI-Build
         run: |
+          set -eux
           qmake . -r -spec win32-g++ "CONFIG+=release" "CONFIG+=rs_autologin" "CONFIG+=no_rs_sam3" "CONFIG+=no_rs_sam3_libsam3"
           mingw32-make -j3
+
+      - name: Package build output
+        run: |
+          set -eux
+          mkdir -p artifact
+          find . -maxdepth 5 -type f -name "*.exe" || true
+          cp -r release artifact/ || true
+          cp -r bin artifact/ || true
+          7z a UCRT64-Qt5-Build.zip artifact/*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UCRT64-Qt5-Build
+          path: UCRT64-Qt5-Build.zip
+          retention-days: 7
