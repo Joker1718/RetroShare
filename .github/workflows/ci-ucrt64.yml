@@ -1,6 +1,7 @@
 name: UCRT64 Qt5 Build
 
 on:
+  workflow_dispatch:
   push:
     paths-ignore:
       - '**/*.md'
